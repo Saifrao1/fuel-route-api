@@ -85,9 +85,10 @@ Start and end must look like `City, ST` with a valid US state code.
 
 ## Algorithm notes
 
-1. **Geocode** start and end with Nominatim (`countrycodes=us`). Results are
-   cached in SQLite (`GeocodeCache`) and under `cache/geocode/` so repeat
-   requests avoid network calls.
+1. **Geocode** start and end. Lookup order: SQLite `GeocodeCache`, on-disk
+   JSON under `cache/geocode/`, bundled `data/city_coords.json`, then
+   Nominatim (`countrycodes=us`). The bundled file keeps common USA places
+   working when the public Nominatim endpoint blocks datacenter IPs.
 2. **Route** once with public OSRM (`/route/v1/driving/...`, GeoJSON overview).
    That is the only routing HTTP call per request.
 3. **Station matching** uses coordinates already attached to `FuelStation`

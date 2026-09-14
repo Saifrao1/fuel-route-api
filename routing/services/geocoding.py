@@ -148,6 +148,32 @@ def _point_from_result(result: dict) -> GeoPoint:
     )
 
 
+
+def _lookup_bundled_city_coords(query: str) -> GeoPoint | None:
+    """Offline fallback for well-known City, ST keys shipped in data/city_coords.json."""
+    path = Path(settings.FUEL_DATA_DIR) / "city_coords.json"
+    if not path.exists():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    pair = raw.get(query) or raw.get(query.title()) 
+    # case-insensitive
+    if pair is None:
+        lower = {k.lower(): v for k, v in raw.items()}
+        pair = lower.get(query.lower())
+    if not pair:
+        return None
+    lat, lon = float(pair[0]), float(pair[1])
+    return GeoPoint(
+        latitude=lat,
+        longitude=lon,
+        display_name=query,
+        country_code="us",
+    )
+
+
 def geocode(place: str, *, require_usa: bool = True) -> GeoPoint:
     """
     Resolve a place string to coordinates.
@@ -210,7 +236,30 @@ def geocode(place: str, *, require_usa: bool = True) -> GeoPoint:
             raise USAValidationError(f"Place is outside the USA: {query!r}")
         return point
 
-    # 3) Live Nominatim
+    # 3) Bundled city coordinates (no network)
+    bundled = _lookup_bundled_city_coords(query)
+    if bundled is not None:
+        payload = {
+            "found": True,
+            "latitude": bundled.latitude,
+            "longitude": bundled.longitude,
+            "display_name": bundled.display_name,
+            "country_code": bundled.country_code,
+        }
+        _write_file_cache(query.lower(), payload)
+        GeocodeCache.objects.update_or_create(
+            query=query,
+            defaults={
+                "found": True,
+                "latitude": bundled.latitude,
+                "longitude": bundled.longitude,
+                "display_name": bundled.display_name,
+                "country_code": bundled.country_code,
+            },
+        )
+        return bundled
+
+    # 4) Live Nominatim
     try:
         results = _nominatim_search(query, countrycodes="us" if require_usa else "")
     except requests.RequestException as exc:

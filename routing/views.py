@@ -16,8 +16,12 @@ def route(request):
     """
     Plan a USA driving route and cost-effective fuel stops.
 
-    POST JSON body: {"start": "Los Angeles, CA", "end": "Chicago, IL"}
-    GET query params: ?start=Los%20Angeles,%20CA&end=Chicago,%20IL
+    POST JSON body: {"start": "Los Angeles, CA", "end": "Las Vegas, NV"}
+    GET query params: ?start=Los%20Angeles,%20CA&end=Las%20Vegas,%20NV
+
+    Los Angeles → Chicago is an intentional 422 edge case on the sample
+    station set: the trip is longer than one tank and the corridor has
+    gaps, so the planner correctly refuses instead of inventing stops.
     """
     if request.method == "GET":
         payload = {

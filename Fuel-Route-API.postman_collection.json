@@ -1,0 +1,181 @@
+{
+  "info": {
+    "_postman_id": "a8f3c1d2-4b6e-4f91-9c7a-fuelrouteapi001",
+    "name": "Fuel Route API",
+    "description": "USA driving route + cost-effective fuel stops.\n\nStart the Django server first:\n`python manage.py runserver`\n\nHappy path: Los Angeles, CA → Las Vegas, NV (200).\nLos Angeles, CA → Chicago, IL is an **intentional 422 edge case** on the sample station set — not a bug.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health", ""]
+            },
+            "description": "Server alive check. Expected: 200 {\"status\": \"ok\"}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Route",
+      "item": [
+        {
+          "name": "POST route - LA to Las Vegas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start\": \"Los Angeles, CA\",\n  \"end\": \"Las Vegas, NV\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/route/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "route", ""]
+            },
+            "description": "Happy path. Expected: 200 with route + fuel_stops."
+          },
+          "response": []
+        },
+        {
+          "name": "GET route - LA to Las Vegas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/route/?start=Los Angeles, CA&end=Las Vegas, NV",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "route", ""],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "Los Angeles, CA"
+                },
+                {
+                  "key": "end",
+                  "value": "Las Vegas, NV"
+                }
+              ]
+            },
+            "description": "Same as POST, but start/end go in query params."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Validation (expected errors)",
+      "item": [
+        {
+          "name": "POST LA to Chicago — intentional 422 edge case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start\": \"Los Angeles, CA\",\n  \"end\": \"Chicago, IL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/route/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "route", ""]
+            },
+            "description": "INTENTIONAL EDGE CASE — expected 422, not a bug.\n\nLA → Chicago is longer than one 500-mile tank. The sample station set does not cover that corridor densely enough, so the planner correctly refuses instead of inventing fuel stops.\n\nUse LA → Las Vegas for the 200 happy path. Load the full CSV if you want this long-haul trip to succeed."
+          },
+          "response": []
+        },
+        {
+          "name": "POST missing start/end",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/route/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "route", ""]
+            },
+            "description": "Expected: 400 validation error."
+          },
+          "response": []
+        },
+        {
+          "name": "POST non-USA format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start\": \"Toronto, ON\",\n  \"end\": \"Chicago, IL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/route/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "route", ""]
+            },
+            "description": "Expected: 400. Start/end must be US City, ST."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

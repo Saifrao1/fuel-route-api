@@ -83,6 +83,8 @@ curl -s 'http://127.0.0.1:8000/api/route/?start=Los%20Angeles,%20CA&end=Las%20Ve
 
 Start and end must look like `City, ST` with a valid US state code.
 
+`422` is an **intentional edge case**, not a crash. Example: `Los Angeles, CA` → `Chicago, IL` on the sample station set. That trip needs on-route refuels, but sample stations leave a range gap along the corridor, so the planner returns `{"detail": "..."}` instead of a fake fuel plan. Load the full CSV if you want long-haul coverage.
+
 ## Algorithm notes
 
 1. **Geocode** start and end. Lookup order: SQLite `GeocodeCache`, on-disk
